@@ -61,6 +61,20 @@ Flashes the Feather's onboard LED on and off.
 
 Flows smoothly through various colors on the Feather's onboard NeoPixel LED.
 
+## Example dev
+
+TODO:
+
+- [x] Add OLED display demo via I2C
+- [ ] Add PIO example
+- [ ] Add RTIC example
+
+### Libraries added
+
+- [x] [embedded-graphics](https://crates.io/crates/embedded-graphics)
+- [x] [sh1107](https://github.com/ThomasRizzo/sh1107.git)
+- [ ] [embedded-plots](https://crates.io/crates/embedded-plots)
+
 ## Contributing
 
 Contributions are what make the open source community such an amazing place to

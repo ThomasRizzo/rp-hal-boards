@@ -2,7 +2,7 @@
 name = "adafruit-feather-rp2040"
 version = "0.6.0"
 authors = ["Andrea Nall <anall@andreanal.com>", "The rp-rs Developers"]
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/rp-rs/rp-hal-boards/tree/main/boards/adafruit-feather-rp2040"
 description = "Board Support Package for the Adafruit Feather RP2040"
 license = "MIT OR Apache-2.0"
@@ -17,6 +17,10 @@ rp2040-hal = { version = "0.8.0" }
 cortex-m-rt = { version = "0.7", optional = true }
 
 [dev-dependencies]
+#Using this fork which has been migrated to latest embedded-graphics 
+# and has 2px diplay offset fix for Adafruit Feather board: https://github.com/ThomasRizzo/sh1107/blob/master/src/properties.rs#L56
+sh1107 = { git = "https://github.com/ThomasRizzo/sh1107.git" }
+embedded-graphics = "0.7.1"
 panic-halt= "0.2.0"
 embedded-hal ="0.2.5"
 fugit = "0.3.5"
