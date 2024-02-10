@@ -20,13 +20,18 @@ use adafruit_feather_rp2040::{
 };
 use core::iter::once;
 use embedded_graphics::{
-    mono_font::{ascii::FONT_10X20, MonoTextStyleBuilder},
+    mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
     pixelcolor::BinaryColor,
     prelude::*,
-    primitives::{Circle, PrimitiveStyle, Rectangle},
+    primitives::{Circle, PrimitiveStyle},
     text::Text,
 };
 use embedded_hal::timer::CountDown;
+use embedded_plots::{
+    axis::Scale,
+    curve::{Curve, PlotPoint},
+    single_plot::SinglePlot,
+};
 use fugit::ExtU32;
 use fugit::RateExtU32;
 use panic_halt as _;
@@ -93,6 +98,11 @@ fn main() -> ! {
         &clocks.peripheral_clock,
     );
 
+    // initialize ADC
+    use rp2040_hal::adc::Adc;
+    let mut adc = Adc::new(pac.ADC, &mut pac.RESETS);
+    let mut temperature_sensor = adc.enable_temp_sensor();
+
     let mut disp: GraphicsMode<_> = Builder::new()
         .with_size(DisplaySize::Display64x128)
         .with_rotation(DisplayRotation::Rotate90)
@@ -101,10 +111,10 @@ fn main() -> ! {
 
     // Create a text style for drawing the font:
     let text_style = MonoTextStyleBuilder::new()
-        .font(&FONT_10X20)    
+        .font(&FONT_6X10)
         .text_color(BinaryColor::On)
         .build();
-    
+
     disp.init().unwrap();
     disp.clear();
     Text::new("123456", Point::new(0, 15), text_style)
@@ -113,29 +123,72 @@ fn main() -> ! {
     disp.flush().unwrap();
 
     // --------------------------------------------------------------------------
+    delay.start(750.millis());
+    let _ = nb::block!(delay.wait());
+
+    use embedded_hal::adc::OneShot;
+    use heapless::HistoryBuffer;
+    use heapless::Vec;
+    let mut reading = HistoryBuffer::<u16, 10>::new();
+    let mut points = Vec::<PlotPoint, 10>::new();
 
     // Infinite colour wheel loop
     let mut n: u8 = 128;
+
     loop {
         ws.write(brightness(once(wheel(n)), 32)).unwrap();
         n = n.wrapping_add(1);
 
-        disp.clear();
-        Text::new(color_sector_text(n), Point::new(0, 15), text_style)
-            .draw(&mut disp)
-            .ok();
+        if n % 10 == 0 {
+            disp.clear();
+            Text::new(color_sector_text(n), Point::new(20, 10), text_style)
+                .draw(&mut disp)
+                .ok();
 
-        Rectangle::new(Point::new(48, 30), Size::new(16, 16))
-            .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-            .draw(&mut disp)
-            .ok();
-        Circle::new(Point::new(68, 30), 16)
-            .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
-            .draw(&mut disp)
-            .ok();
+            Circle::new(Point::new(80, 10), 16)
+                .into_styled(PrimitiveStyle::with_stroke(BinaryColor::On, 1))
+                .draw(&mut disp)
+                .ok();
 
-        disp.flush().ok();
+            let t = adc.read(&mut temperature_sensor).unwrap_or(0);
+            reading.write(t);
 
+            use core::fmt::Write;
+            use heapless::String;
+            let mut data = String::<32>::new();
+            write!(data, "{t}").ok();
+
+            Text::new(data.as_str(), Point::new(100, 20), text_style)
+                .draw(&mut disp)
+                .ok();
+
+            points.clear();
+            for (i, &v) in reading.oldest_ordered().enumerate() {
+                points
+                    .push(PlotPoint {
+                        x: i as i32,
+                        y: v as i32,
+                    })
+                    .ok();
+            }
+
+            if points.len() > 5 {
+                let curve = Curve::from_data(points.as_slice());
+                let curve_list = [(curve, BinaryColor::On)];
+
+                //TODO: RangeFraction is not working properly. 
+                //RangeFraction(5) should have 5 ticks, but get 9. If # of points < 5, seems to panic.
+                if let Ok(plot) = SinglePlot::new(&curve_list, Scale::RangeFraction(5), Scale::Fixed(1000)) {
+                    plot.into_drawable(Point { x: 30, y: 20 }, Point { x: 120, y: 45 })
+                        .set_color(BinaryColor::On)
+                        .set_text_color(BinaryColor::On)
+                        .draw(&mut disp)
+                        .ok();
+                }
+            }
+
+            disp.flush().ok();
+        }
         delay.start(25.millis());
         let _ = nb::block!(delay.wait());
     }

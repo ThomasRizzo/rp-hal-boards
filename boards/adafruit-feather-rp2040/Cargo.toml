@@ -17,8 +17,9 @@ rp2040-hal = { version = "0.8.0" }
 cortex-m-rt = { version = "0.7", optional = true }
 
 [dev-dependencies]
-#Using this fork which has been migrated to latest embedded-graphics 
-# and has 2px diplay offset fix for Adafruit Feather board: https://github.com/ThomasRizzo/sh1107/blob/master/src/properties.rs#L56
+#Using this fork of sh1107 which has been migrated to latest embedded-graphics 
+# and has 2px diplay offset fix for Adafruit Feather board.
+# See: https://github.com/ThomasRizzo/sh1107/blob/master/src/properties.rs#L56
 sh1107 = { git = "https://github.com/ThomasRizzo/sh1107.git" }
 embedded-graphics = "0.7.1"
 panic-halt= "0.2.0"
@@ -27,6 +28,9 @@ fugit = "0.3.5"
 nb = "1.0.0"
 smart-leds = "0.3.0"
 ws2812-pio = "0.6.0"
+# embedded-plots = "0.2.0"
+embedded-plots = {git = "https://github.com/ThomasRizzo/embedded-plots.git"}
+heapless = "0.7.16"
 
 [features]
 # This is the set of features we enable by default

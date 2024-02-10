@@ -68,6 +68,7 @@ TODO:
 - [x] Add OLED display demo via I2C
 - [ ] Add PIO example
 - [ ] Add RTIC example
+- [ ] Add Embassy example
 
 ### Libraries added
 
